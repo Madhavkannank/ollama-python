@@ -1619,3 +1619,139 @@ async def test_async_client_chat_tool_call_id(httpserver: HTTPServer):
   assert response.message.tool_calls[0].id == 'call_async_98765'
   assert response.message.tool_calls[0]['id'] == 'call_async_98765'
 
+
+def test_client_chat_tool_result_message(httpserver: HTTPServer):
+  httpserver.expect_ordered_request(
+    '/api/chat',
+    method='POST',
+    json={
+      'model': 'dummy',
+      'messages': [
+        {'role': 'user', 'content': 'What is the weather in SF?'},
+        {
+          'role': 'assistant',
+          'tool_calls': [
+            {
+              'id': 'call_12345',
+              'function': {
+                'name': 'get_weather',
+                'arguments': {'location': 'San Francisco'},
+              },
+            }
+          ],
+        },
+        {
+          'role': 'tool',
+          'tool_call_id': 'call_12345',
+          'tool_name': 'get_weather',
+          'content': '72 degrees and sunny',
+        },
+      ],
+      'tools': [],
+      'stream': False,
+    },
+  ).respond_with_json(
+    {
+      'model': 'dummy',
+      'message': {
+        'role': 'assistant',
+        'content': 'The weather in San Francisco is 72 degrees and sunny.',
+      },
+    }
+  )
+
+  client = Client(httpserver.url_for('/'))
+  messages = [
+    {'role': 'user', 'content': 'What is the weather in SF?'},
+    {
+      'role': 'assistant',
+      'content': '',
+      'tool_calls': [
+        {
+          'id': 'call_12345',
+          'function': {
+            'name': 'get_weather',
+            'arguments': {'location': 'San Francisco'},
+          },
+        }
+      ],
+    },
+    {
+      'role': 'tool',
+      'tool_call_id': 'call_12345',
+      'tool_name': 'get_weather',
+      'content': '72 degrees and sunny',
+    },
+  ]
+  response = client.chat('dummy', messages=messages)
+  assert response.message.content == 'The weather in San Francisco is 72 degrees and sunny.'
+
+
+async def test_async_client_chat_tool_result_message(httpserver: HTTPServer):
+  httpserver.expect_ordered_request(
+    '/api/chat',
+    method='POST',
+    json={
+      'model': 'dummy',
+      'messages': [
+        {'role': 'user', 'content': 'What is the weather in Tokyo?'},
+        {
+          'role': 'assistant',
+          'tool_calls': [
+            {
+              'id': 'call_async_999',
+              'function': {
+                'name': 'get_weather',
+                'arguments': {'location': 'Tokyo'},
+              },
+            }
+          ],
+        },
+        {
+          'role': 'tool',
+          'tool_call_id': 'call_async_999',
+          'tool_name': 'get_weather',
+          'content': '18 degrees and rainy',
+        },
+      ],
+      'tools': [],
+      'stream': False,
+    },
+  ).respond_with_json(
+    {
+      'model': 'dummy',
+      'message': {
+        'role': 'assistant',
+        'content': 'The weather in Tokyo is 18 degrees and rainy.',
+      },
+    }
+  )
+
+  async_client = AsyncClient(httpserver.url_for('/'))
+  messages = [
+    {'role': 'user', 'content': 'What is the weather in Tokyo?'},
+    {
+      'role': 'assistant',
+      'content': '',
+      'tool_calls': [
+        {
+          'id': 'call_async_999',
+          'function': {
+            'name': 'get_weather',
+            'arguments': {'location': 'Tokyo'},
+          },
+        }
+      ],
+    },
+    {
+      'role': 'tool',
+      'tool_call_id': 'call_async_999',
+      'tool_name': 'get_weather',
+      'content': '18 degrees and rainy',
+    },
+  ]
+  response = await async_client.chat('dummy', messages=messages)
+  assert response.message.content == 'The weather in Tokyo is 18 degrees and rainy.'
+
+
+

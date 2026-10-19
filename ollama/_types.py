@@ -330,6 +330,9 @@ class Message(SubscriptableBaseModel):
   tool_name: Optional[str] = None
   'Name of the executed tool.'
 
+  tool_call_id: Optional[str] = None
+  'ID of the tool call that produced this message.'
+
   class ToolCall(SubscriptableBaseModel):
     """
     Model tool calls.
